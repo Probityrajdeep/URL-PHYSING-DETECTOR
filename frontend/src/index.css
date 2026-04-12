@@ -1,0 +1,104 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+  body {
+    @apply min-h-screen text-slate-200 antialiased;
+    background-color: #020308;
+    background-image:
+      radial-gradient(ellipse 120% 80% at 50% -30%, rgba(59, 130, 246, 0.22), transparent 55%),
+      radial-gradient(ellipse 90% 60% at 100% 50%, rgba(139, 92, 246, 0.18), transparent 50%),
+      radial-gradient(ellipse 70% 50% at 0% 80%, rgba(37, 99, 235, 0.14), transparent 45%),
+      linear-gradient(180deg, #010206 0%, #050a14 45%, #020308 100%);
+    background-attachment: fixed;
+  }
+}
+
+.cyber-grid {
+  background-image:
+    linear-gradient(rgba(56, 189, 248, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 85% 70% at 50% 45%, black 25%, transparent 78%);
+}
+
+.cyber-scanline {
+  pointer-events: none;
+  background: linear-gradient(
+    transparent 0%,
+    rgba(56, 189, 248, 0.035) 50%,
+    transparent 100%
+  );
+  background-size: 100% 4px;
+  animation: scanline 8s linear infinite;
+}
+
+@keyframes scanline {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 0 100vh;
+  }
+}
+
+/* Neon utilities */
+.neon-border-glass {
+  box-shadow:
+    0 0 0 1px rgba(34, 211, 238, 0.12),
+    0 0 40px rgba(59, 130, 246, 0.12),
+    0 0 80px rgba(139, 92, 246, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.text-neon-heading {
+  text-shadow:
+    0 0 20px rgba(147, 197, 253, 0.35),
+    0 0 40px rgba(139, 92, 246, 0.2);
+}
+
+.neon-input-focus:focus {
+  box-shadow:
+    0 0 0 1px rgba(34, 211, 238, 0.35),
+    0 0 24px rgba(34, 211, 238, 0.2),
+    0 0 48px rgba(59, 130, 246, 0.15),
+    0 0 72px rgba(139, 92, 246, 0.08);
+}
+
+@keyframes risk-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.risk-bar-shimmer {
+  background-size: 200% 100%;
+  animation: risk-shimmer 3s linear infinite;
+}
+
+@keyframes scan-btn-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 0 rgba(34, 211, 238, 0.45),
+      0 0 20px rgba(59, 130, 246, 0.4),
+      0 0 40px rgba(139, 92, 246, 0.2);
+  }
+  50% {
+    box-shadow:
+      0 0 0 10px rgba(34, 211, 238, 0),
+      0 0 32px rgba(59, 130, 246, 0.55),
+      0 0 56px rgba(139, 92, 246, 0.28);
+  }
+}
+
+.scan-btn-pulse-glow {
+  animation: scan-btn-pulse 2.2s ease-in-out infinite;
+}
