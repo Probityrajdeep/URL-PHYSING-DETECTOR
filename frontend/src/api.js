@@ -10,7 +10,7 @@ function apiBase() {
   if (raw && String(raw).trim()) {
     return String(raw).replace(/\/$/, "");
   }
-  return "/api";
+  return "https://url-physing-detector.onrender.com";;
 }
 
 const client = axios.create({
