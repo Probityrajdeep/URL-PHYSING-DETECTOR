@@ -1,15 +1,15 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { predictUrl, formatAxiosError } from "../../api.js";
 import { predictionTheme, reasonEmoji, verdictEmoji } from "../../lib/scanDisplay.js";
-import {
-  CyberSpinner,
-  ExplainableUrlBlock,
-  RippleScanButton,
-  RiskProgressBar,
-  SCAN_EXAMPLES,
-  TypingText,
-} from "./ScanParts.jsx";
+import { ExplainableUrlBlock, RippleScanButton, RiskProgressBar, SCAN_EXAMPLES, TypingText } from "./ScanParts.jsx";
+
+const TERMINAL_LINES = [
+  "Extracting domain payload...",
+  "Verifying SSL certificate chain...",
+  "Running heuristic AI analysis...",
+  "Calculating final risk score...",
+];
 
 /**
  * URL scan form + animated result card. Calls Flask POST /predict via Vite proxy.
@@ -20,8 +20,37 @@ export default function ScanWorkspace({ interceptScan, onScanSuccess }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
+  const [terminalLineCount, setTerminalLineCount] = useState(0);
+  const [terminalDone, setTerminalDone] = useState(false);
+  const [apiDone, setApiDone] = useState(false);
+  const [pendingResult, setPendingResult] = useState(null);
   const scanGeneration = useRef(0);
   const canSubmit = input.trim().length > 0 && !loading;
+
+  useEffect(() => {
+    if (!loading) return undefined;
+    setTerminalLineCount(0);
+    setTerminalDone(false);
+    let step = 0;
+    const intervalId = window.setInterval(() => {
+      step += 1;
+      setTerminalLineCount(step);
+      if (step >= TERMINAL_LINES.length) {
+        window.clearInterval(intervalId);
+        setTerminalDone(true);
+      }
+    }, 600);
+    return () => window.clearInterval(intervalId);
+  }, [loading]);
+
+  useEffect(() => {
+    if (!loading || !apiDone || !terminalDone) return;
+    if (pendingResult) setResult(pendingResult);
+    setLoading(false);
+    setApiDone(false);
+    setTerminalDone(false);
+    setPendingResult(null);
+  }, [apiDone, loading, pendingResult, terminalDone]);
 
   const onScan = useCallback(
     async (e) => {
@@ -38,17 +67,21 @@ export default function ScanWorkspace({ interceptScan, onScanSuccess }) {
       }
       const gen = ++scanGeneration.current;
       setLoading(true);
+      setApiDone(false);
+      setPendingResult(null);
       try {
         const trimmed = input.trim();
         const data = await predictUrl(trimmed);
         if (gen !== scanGeneration.current) return;
-        setResult(data);
+        setPendingResult(data);
+        setApiDone(true);
         onScanSuccess?.(data, trimmed);
       } catch (err) {
         if (gen !== scanGeneration.current) return;
         setError(formatAxiosError(err));
-      } finally {
-        if (gen === scanGeneration.current) setLoading(false);
+        setLoading(false);
+        setApiDone(false);
+        setPendingResult(null);
       }
     },
     [input, interceptScan, onScanSuccess]
@@ -111,65 +144,83 @@ export default function ScanWorkspace({ interceptScan, onScanSuccess }) {
           </div>
 
           <form onSubmit={onScan} className="space-y-5" aria-busy={loading}>
-            <div>
-              <label htmlFor="url" className="mb-2 block font-mono text-[10px] uppercase tracking-widest text-slate-500">
-                Target URL
-              </label>
-              <input
-                id="url"
-                name="url"
-                type="text"
-                value={input}
-                onChange={(e) => {
-                  setInput(e.target.value);
-                  setError("");
-                }}
-                placeholder="https://example.com"
-                autoComplete="off"
-                spellCheck={false}
-                disabled={loading}
-                className="neon-input-focus w-full rounded-lg border border-white/12 bg-black/45 px-4 py-3.5 font-mono text-sm text-slate-100 outline-none transition-all duration-300 placeholder:text-slate-600 focus:border-cyan-400/55 focus:bg-black/60 focus:ring-0 disabled:cursor-not-allowed disabled:opacity-60"
-              />
-            </div>
-
-            <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <RippleScanButton disabled={!canSubmit} loading={loading} label="Scan Now" />
-              <p className="text-center font-mono text-[10px] text-slate-600 sm:text-left">Rule-based · explainable</p>
-            </div>
-
-            <div className="flex flex-wrap gap-2 border-t border-white/[0.06] pt-5">
-              <span className="w-full font-mono text-[9px] uppercase tracking-widest text-slate-600">Quick test</span>
-              {SCAN_EXAMPLES.map((ex) => (
-                <button
-                  key={ex}
-                  type="button"
-                  onClick={() => {
-                    setInput(ex);
-                    setError("");
-                    setResult(null);
-                  }}
-                  className="rounded border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-left font-mono text-[10px] text-cyan-300/85 transition hover:border-cyan-500/40 hover:bg-cyan-500/10 hover:shadow-[0_0_12px_rgba(34,211,238,0.15)]"
+            <AnimatePresence mode="wait" initial={false}>
+              {!loading ? (
+                <motion.div
+                  key="scan-input-ui"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.22 }}
+                  className="space-y-5"
                 >
-                  {ex.length > 36 ? `${ex.slice(0, 36)}…` : ex}
-                </button>
-              ))}
-            </div>
-          </form>
+                  <div>
+                    <label htmlFor="url" className="mb-2 block font-mono text-[10px] uppercase tracking-widest text-slate-500">
+                      Target URL
+                    </label>
+                    <input
+                      id="url"
+                      name="url"
+                      type="text"
+                      value={input}
+                      onChange={(e) => {
+                        setInput(e.target.value);
+                        setError("");
+                      }}
+                      placeholder="https://example.com"
+                      autoComplete="off"
+                      spellCheck={false}
+                      disabled={loading}
+                      className="neon-input-focus w-full rounded-lg border border-white/12 bg-black/45 px-4 py-3.5 font-mono text-sm text-slate-100 outline-none transition-all duration-300 placeholder:text-slate-600 focus:border-cyan-400/60 focus:bg-black/60 focus:ring-0 active:border-violet-400/50 active:shadow-[0_0_24px_rgba(34,211,238,0.35)] disabled:cursor-not-allowed disabled:opacity-60"
+                    />
+                  </div>
 
-          <AnimatePresence mode="wait">
-            {loading && (
-              <motion.div
-                key="loading"
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.25 }}
-                className="overflow-hidden"
-              >
-                <CyberSpinner />
-              </motion.div>
-            )}
-          </AnimatePresence>
+                  <div className="flex flex-col items-stretch gap-4 sm:flex-row sm:items-center sm:justify-between">
+                    <RippleScanButton disabled={!canSubmit} loading={loading} label="Scan Now" />
+                    <p className="text-center font-mono text-[10px] text-slate-600 sm:text-left">Rule-based · explainable</p>
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 border-t border-white/[0.06] pt-5">
+                    <span className="w-full font-mono text-[9px] uppercase tracking-widest text-slate-600">Quick test</span>
+                    {SCAN_EXAMPLES.map((ex) => (
+                      <button
+                        key={ex}
+                        type="button"
+                        onClick={() => {
+                          setInput(ex);
+                          setError("");
+                          setResult(null);
+                        }}
+                        className="rounded border border-white/10 bg-white/[0.04] px-2.5 py-1.5 text-left font-mono text-[10px] text-cyan-300/85 transition hover:border-cyan-500/40 hover:bg-cyan-500/10 hover:shadow-[0_0_12px_rgba(34,211,238,0.15)]"
+                      >
+                        {ex.length > 36 ? `${ex.slice(0, 36)}…` : ex}
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="terminal-loading-ui"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="rounded-lg border border-emerald-400/30 bg-black/85 p-4 font-mono text-xs text-emerald-300 shadow-[0_0_24px_rgba(52,211,153,0.14)]"
+                  role="status"
+                  aria-live="polite"
+                >
+                  <p className="mb-3 text-[10px] uppercase tracking-[0.2em] text-emerald-400/75">Terminal Process</p>
+                  <div className="space-y-2">
+                    {TERMINAL_LINES.slice(0, terminalLineCount).map((line) => (
+                      <p key={line} className="leading-relaxed [text-shadow:0_0_10px_rgba(52,211,153,0.28)]">
+                        {`> ${line}`}
+                      </p>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </form>
 
           <AnimatePresence>
             {error && (

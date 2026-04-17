@@ -254,7 +254,7 @@ export function RippleScanButton({ disabled, loading, type = "submit", label = "
         whileHover={disabled ? {} : { scale: 1.02 }}
         whileTap={disabled ? {} : { scale: 0.96 }}
         transition={{ type: "spring", stiffness: 400, damping: 25 }}
-        className="relative z-10 isolate overflow-hidden rounded-lg bg-gradient-to-r from-blue-600 via-violet-600 to-blue-600 bg-[length:200%_100%] px-8 py-3.5 font-mono text-sm font-bold uppercase tracking-wider text-white [text-shadow:0_0_12px_rgba(255,255,255,0.35)] shadow-[0_0_28px_rgba(59,130,246,0.45)] transition-[background-position] duration-500 hover:bg-right disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
+        className="relative z-10 isolate overflow-hidden rounded-lg bg-gradient-to-r from-blue-600 via-violet-500 to-cyan-500 bg-[length:220%_100%] px-8 py-3.5 font-mono text-sm font-bold uppercase tracking-wider text-white [text-shadow:0_0_12px_rgba(255,255,255,0.35)] shadow-[0_0_28px_rgba(59,130,246,0.45)] transition-all duration-500 hover:-translate-y-0.5 hover:bg-right hover:shadow-[0_0_34px_rgba(34,211,238,0.55)] disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
       >
         <span className="relative z-10">{loading ? "Scanning…" : label}</span>
         <AnimatePresence>

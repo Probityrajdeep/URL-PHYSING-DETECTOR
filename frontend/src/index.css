@@ -69,6 +69,14 @@
     0 0 72px rgba(139, 92, 246, 0.08);
 }
 
+.neon-input-focus:focus-visible {
+  box-shadow:
+    0 0 0 1px rgba(34, 211, 238, 0.45),
+    0 0 28px rgba(34, 211, 238, 0.28),
+    0 0 54px rgba(59, 130, 246, 0.2),
+    0 0 80px rgba(139, 92, 246, 0.12);
+}
+
 @keyframes risk-shimmer {
   0% {
     background-position: 200% 0;
@@ -101,4 +109,17 @@
 
 .scan-btn-pulse-glow {
   animation: scan-btn-pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes threat-ticker {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.threat-ticker-track {
+  animation: threat-ticker 28s linear infinite;
 }
