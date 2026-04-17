@@ -1,30 +1,28 @@
-const { useEffect, useMemo, useRef, useState } = React;
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import ReactDOM from "react-dom/client";
 
 function clamp(n, min, max) {
   return Math.max(min, Math.min(max, n));
 }
 
 function colorForScore(score) {
-  if (score >= 70) return "bad";
-  if (score >= 40) return "warn";
-  return "good";
+  if (score >= 70) return "red";
+  if (score >= 40) return "orange";
+  return "green";
 }
 
 function useLocalStorageState(key, initialValue) {
   const [state, setState] = useState(() => {
     try {
       const raw = localStorage.getItem(key);
-      if (!raw) return initialValue;
-      return JSON.parse(raw);
+      return raw ? JSON.parse(raw) : initialValue;
     } catch {
       return initialValue;
     }
   });
 
   useEffect(() => {
-    try {
-      localStorage.setItem(key, JSON.stringify(state));
-    } catch {}
+    localStorage.setItem(key, JSON.stringify(state));
   }, [key, state]);
 
   return [state, setState];
@@ -39,27 +37,30 @@ function App() {
   });
   const [history, setHistory] = useLocalStorageState("url.history", []);
   const inputRef = useRef(null);
+  const [loading, setLoading] = useState(false);
 
-  const examples = useMemo(
-    () => [
-      "https://example.com/login",
-      "http://192.168.1.10/secure/update",
-      "paypal.com.verify-account.security-alert.xyz/login",
-      "https://xn--pple-43d.com/security",
-    ],
-    []
-  );
+  const examples = useMemo(() => [
+    "https://example.com/login",
+    "http://192.168.1.10/secure/update",
+    "paypal.com.verify-account.security-alert.xyz/login",
+    "https://xn--pple-43d.com/security",
+  ], []);
 
-  // ✅ BACKEND CONNECTED HERE
+  // 🔥 BACKEND CALL
   function runScan(value) {
-    fetch("https://url-physing-detector.onrender.com/predict", {
+    setLoading(true);
+
+    fetch(`${import.meta.env.VITE_API_URL}/predict`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({ url: value })
     })
-    .then(res => res.json())
+    .then(async res => {
+      if (!res.ok) throw new Error(`Server error: ${res.status}`);
+      return res.json();
+    })
     .then(data => {
       console.log(data);
 
@@ -74,22 +75,25 @@ function App() {
       setResult(formatted);
 
       const item = {
-        id: `${Date.now()}`,
+        id: Date.now(),
         at: new Date().toISOString(),
         input: value,
         verdict: data.prediction,
         score: Math.round(data.confidence * 100),
       };
 
-      setHistory((prev) => [item, ...(prev || [])].slice(0, 10));
+      setHistory(prev => [item, ...prev].slice(0, 10));
     })
     .catch(err => {
       console.error(err);
       setResult({
         verdict: "Error",
         score: 0,
-        reasons: [{ message: "Backend not reachable" }]
+        reasons: [{ message: err.message || "Backend not reachable" }]
       });
+    })
+    .finally(() => {
+      setLoading(false);
     });
   }
 
@@ -102,18 +106,18 @@ function App() {
   function useExample(x) {
     setInput(x);
     runScan(x);
-    inputRef.current?.focus?.();
+    inputRef.current?.focus();
   }
 
   function clearHistory() {
     setHistory([]);
   }
 
-  const verdictClass = colorForScore(result.score);
   const barWidth = `${clamp(result.score, 0, 100)}%`;
+  const color = colorForScore(result.score);
 
   return (
-    <div className="container">
+    <div style={{ padding: "20px", fontFamily: "Arial" }}>
       <h1>🔐 Phishing URL Detector</h1>
 
       <form onSubmit={onSubmit}>
@@ -122,32 +126,22 @@ function App() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Enter URL"
+          style={{ width: "300px", padding: "8px" }}
         />
-        <button type="submit">Scan</button>
+        <button type="submit" style={{ marginLeft: "10px" }}>
+          {loading ? "Scanning..." : "Scan"}
+        </button>
       </form>
 
-      <div>
-        <h2 style={{
-          color:
-            verdictClass === "bad" ? "red" :
-            verdictClass === "warn" ? "orange" : "green"
-        }}>
-          {result.verdict}
-        </h2>
-
+      <div style={{ marginTop: "20px" }}>
+        <h2 style={{ color }}>{result.verdict}</h2>
         <p>Score: {result.score}/100</p>
 
-        <div style={{
-          width: "100%",
-          height: "10px",
-          background: "#ccc"
-        }}>
+        <div style={{ width: "100%", height: "10px", background: "#ccc" }}>
           <div style={{
             width: barWidth,
             height: "100%",
-            background:
-              verdictClass === "bad" ? "red" :
-              verdictClass === "warn" ? "orange" : "green"
+            background: color
           }} />
         </div>
 
