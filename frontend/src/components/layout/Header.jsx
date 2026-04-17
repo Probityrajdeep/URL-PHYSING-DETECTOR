@@ -1,6 +1,8 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { ArrowLeft } from "lucide-react";
 import { useAuth } from "../../context/AuthContext.jsx";
+import UserProfileMenu from "./UserProfileMenu.jsx";
 
 const navClass = ({ isActive }) =>
   `rounded-md px-3 py-2 text-sm font-medium transition-colors ${
@@ -11,6 +13,16 @@ const navClass = ({ isActive }) =>
 
 export default function Header() {
   const { isAuthenticated, user, logout } = useAuth();
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const onGoBack = () => {
+    if (window.history.length > 1) {
+      navigate(-1);
+      return;
+    }
+    navigate("/");
+  };
 
   return (
     <motion.header
@@ -20,9 +32,20 @@ export default function Header() {
       className="relative z-20 border-b border-white/[0.08] bg-black/40 shadow-[0_8px_32px_rgba(0,0,0,0.35)] backdrop-blur-xl"
     >
       <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
-        <NavLink to="/" className="shrink-0 font-mono text-xs font-bold uppercase tracking-[0.2em] text-cyan-300/90">
-          PhishGuard
-        </NavLink>
+        <div className="flex shrink-0 items-center gap-2">
+          <button
+            type="button"
+            onClick={onGoBack}
+            disabled={location.pathname === "/"}
+            aria-label="Go back"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/15 bg-white/5 text-slate-200 transition hover:border-cyan-500/40 hover:bg-cyan-500/10 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </button>
+          <NavLink to="/" className="font-mono text-xs font-bold uppercase tracking-[0.2em] text-cyan-300/90">
+            PhishGuard
+          </NavLink>
+        </div>
 
         <nav className="order-3 flex w-full flex-1 justify-center gap-1 sm:order-none sm:w-auto sm:flex-none sm:gap-2 md:gap-4">
           <NavLink to="/" className={navClass} end>
@@ -41,19 +64,7 @@ export default function Header() {
 
         <div className="flex shrink-0 items-center gap-2">
           {isAuthenticated ? (
-            <>
-              <span className="hidden max-w-[140px] truncate font-mono text-[10px] text-slate-500 sm:inline" title={user?.email}>
-                {user?.name}
-              </span>
-              <motion.button
-                type="button"
-                whileTap={{ scale: 0.97 }}
-                onClick={logout}
-                className="rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-cyan-500/40 hover:bg-cyan-500/10"
-              >
-                Log out
-              </motion.button>
-            </>
+            <UserProfileMenu user={user} onLogout={logout} />
           ) : (
             <>
               <NavLink

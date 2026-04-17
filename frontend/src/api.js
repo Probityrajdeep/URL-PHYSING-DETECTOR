@@ -37,9 +37,19 @@ function normalizePredictResponse(data) {
   }
   reasons = reasons.map((r) => (typeof r === "string" ? r : String(r ?? ""))).filter(Boolean);
 
+  const rawConfidence = data.confidence;
+  let normalizedConfidence = null;
+  if (typeof rawConfidence === "number" && !Number.isNaN(rawConfidence)) {
+    // Support both backend styles:
+    // - ratio form: 0.0..1.0
+    // - percent form: 0..100
+    const asPercent = rawConfidence <= 1 ? rawConfidence * 100 : rawConfidence;
+    normalizedConfidence = Math.max(0, Math.min(100, Math.round(asPercent)));
+  }
+
   return {
     prediction: prediction.trim(),
-    confidence: typeof data.confidence === "number" && !Number.isNaN(data.confidence) ? data.confidence : null,
+    confidence: normalizedConfidence,
     reasons,
     score: typeof data.score === "number" && !Number.isNaN(data.score) ? data.score : undefined,
     normalized_url:
@@ -51,6 +61,7 @@ function normalizePredictResponse(data) {
  * Calls Flask `POST /predict` with `{ url }`.
  * @param {string} url
  * @returns {Promise<{ prediction: string, confidence: number | null, reasons: string[], score?: number, normalized_url?: string }>}
+ * `confidence` is always normalized to a 0..100 percentage value.
  */
 export async function predictUrl(url) {
   const { data, status } = await client.post(`${apiBase()}/predict`, { url });

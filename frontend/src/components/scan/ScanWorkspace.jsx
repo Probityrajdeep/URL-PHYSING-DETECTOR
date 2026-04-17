@@ -295,7 +295,7 @@ export default function ScanWorkspace({ interceptScan, onScanSuccess }) {
                   >
                     <p className="font-mono text-[10px] uppercase tracking-widest text-slate-500">Confidence</p>
                     <p className="mt-1 font-mono text-2xl font-bold tabular-nums text-white [text-shadow:0_0_16px_rgba(255,255,255,0.2)]">
-                      {typeof result.confidence === "number" ? `${Math.round(result.confidence * 100)}%` : "—"}
+                      {typeof result.confidence === "number" ? `${Math.round(result.confidence)}%` : "—"}
                     </p>
                     <p className="mt-1 font-mono text-[9px] text-slate-600">Heuristic output</p>
                   </div>
