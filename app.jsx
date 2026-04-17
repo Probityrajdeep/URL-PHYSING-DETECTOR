@@ -50,7 +50,7 @@ function App() {
   function runScan(value) {
     setLoading(true);
 
-    fetch("https://url-physing-detector.onrender.com/predict", {
+    fetch(`${import.meta.env.VITE_API_URL}/predict`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
