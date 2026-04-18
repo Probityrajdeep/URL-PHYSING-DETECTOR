@@ -2,15 +2,17 @@ import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext.jsx";
+import { getOAuthAuthorizationUrl } from "../services/authService.js";
 
-function SocialButton({ label, onClick }) {
+function SocialButton({ label, onClick, disabled }) {
   return (
     <motion.button
       type="button"
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
       onClick={onClick}
-      className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/12 bg-white/5 py-2.5 text-sm font-medium text-slate-200 transition hover:border-cyan-500/35 hover:bg-cyan-500/10"
+      disabled={disabled}
+      className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/12 bg-white/5 py-2.5 text-sm font-medium text-slate-200 transition hover:border-cyan-500/35 hover:bg-cyan-500/10 disabled:cursor-not-allowed disabled:opacity-60"
     >
       {label}
     </motion.button>
@@ -27,6 +29,7 @@ export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [redirectingProvider, setRedirectingProvider] = useState("");
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -43,6 +46,18 @@ export default function Login() {
       return;
     }
     navigate(from, { replace: true });
+  };
+
+  const handleLogin = (provider) => {
+    setError("");
+    try {
+      const authUrl = getOAuthAuthorizationUrl(provider);
+      setRedirectingProvider(provider);
+      window.location.href = authUrl;
+    } catch (authError) {
+      setRedirectingProvider("");
+      setError(authError?.message || "Failed to start OAuth login.");
+    }
   };
 
   return (
@@ -119,17 +134,25 @@ export default function Login() {
             <div className="mt-3 grid gap-2">
               <SocialButton
                 label="Google"
-                onClick={() => alert("Social login is UI-only in this demo.")}
+                onClick={() => handleLogin("google")}
+                disabled={Boolean(redirectingProvider)}
               />
               <SocialButton
                 label="Microsoft"
-                onClick={() => alert("Social login is UI-only in this demo.")}
+                onClick={() => handleLogin("microsoft")}
+                disabled={Boolean(redirectingProvider)}
               />
               <SocialButton
                 label="GitHub"
-                onClick={() => alert("Social login is UI-only in this demo.")}
+                onClick={() => handleLogin("github")}
+                disabled={Boolean(redirectingProvider)}
               />
             </div>
+            {redirectingProvider ? (
+              <p className="mt-3 text-center text-xs text-cyan-300">
+                Redirecting to {redirectingProvider[0].toUpperCase() + redirectingProvider.slice(1)}...
+              </p>
+            ) : null}
           </div>
 
           <p className="mt-8 text-center text-sm text-slate-500">

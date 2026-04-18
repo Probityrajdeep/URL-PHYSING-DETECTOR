@@ -9,6 +9,7 @@ import FAQ from "./pages/FAQ.jsx";
 import Careers from "./pages/Careers.jsx";
 import Login from "./pages/Login.jsx";
 import Signup from "./pages/Signup.jsx";
+import AuthCallback from "./pages/AuthCallback.jsx";
 
 /** Top-level routes: marketing pages + auth + protected dashboard. */
 export default function App() {
@@ -24,6 +25,7 @@ export default function App() {
             <Route path="careers" element={<Careers />} />
             <Route path="login" element={<Login />} />
             <Route path="signup" element={<Signup />} />
+            <Route path="auth/callback" element={<AuthCallback />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>
